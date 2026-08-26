@@ -358,7 +358,7 @@ impl eframe::App for UrlSchemeHandler {
                                 .add_sized([button_width, 30.0], egui::Button::new(label))
                                 .clicked()
                             {
-                                let dialog = FileDialog::new();
+                                let mut dialog = FileDialog::new();
                                 #[cfg(windows)]
                                 {
                                     dialog = dialog.add_filter("Executable", &["exe"]);
@@ -419,8 +419,12 @@ impl eframe::App for UrlSchemeHandler {
                             Err(e) => show_error("Error", e),
                         }
                     }
+                    let remove_button = egui::Button::new("➖ Remove from Registry");
                     if ui
-                        .add_sized([width, 30.0], egui::Button::new("➖ Remove from Registry"))
+                        .add_enabled_ui(!cfg!(target_os = "macos"), |ui| {
+                            ui.add_sized([width, 30.0], remove_button)
+                        })
+                        .inner
                         .clicked()
                     {
                         match platform::unregister_scheme(SCHEME) {
