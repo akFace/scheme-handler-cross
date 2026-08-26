@@ -358,7 +358,7 @@ impl eframe::App for UrlSchemeHandler {
                                 .add_sized([button_width, 30.0], egui::Button::new(label))
                                 .clicked()
                             {
-                                let mut dialog = FileDialog::new();
+                                let dialog = FileDialog::new();
                                 #[cfg(windows)]
                                 {
                                     dialog = dialog.add_filter("Executable", &["exe"]);
@@ -442,7 +442,7 @@ impl eframe::App for UrlSchemeHandler {
     }
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     let args: Vec<String> = env::args().collect();
 
     #[cfg(target_os = "macos")]
