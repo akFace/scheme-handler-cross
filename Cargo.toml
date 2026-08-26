@@ -1,6 +1,6 @@
 [package]
 name = "url-scheme-handler"
-version = "2.2.1"
+version = "2.2.2"
 edition = "2021"
 description = "Cross-platform URL Scheme Handler"
 license = "MIT"
