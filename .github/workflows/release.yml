@@ -31,7 +31,6 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       tag: ${{ steps.version.outputs.tag }}
-      previous_tag: ${{ steps.version.outputs.previous_tag }}
 
     steps:
       - name: Checkout
@@ -87,8 +86,6 @@ jobs:
 
           VERSION="${MAJOR}.${MINOR}.${PATCH}"
           TAG="v${VERSION}"
-          PREVIOUS=$(git tag --sort=-version:refname | head -1 || true)
-
           if git rev-parse "$TAG" >/dev/null 2>&1; then
             echo "Tag $TAG already exists"
             exit 1
@@ -119,47 +116,13 @@ jobs:
 
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "previous_tag=$PREVIOUS" >> "$GITHUB_OUTPUT"
-
-      - name: Generate changelog
-        env:
-          TAG: ${{ steps.version.outputs.tag }}
-          PREVIOUS_TAG: ${{ steps.version.outputs.previous_tag }}
-        run: |
-          DATE=$(date -u +%Y-%m-%d)
-
-          if [ -n "$PREVIOUS_TAG" ]; then
-            RANGE="$PREVIOUS_TAG..HEAD"
-          else
-            RANGE="HEAD"
-          fi
-
-          {
-            echo "## $TAG - $DATE"
-            echo
-            echo "### Changes"
-            echo
-
-            git log "$RANGE" \
-              --pretty=format:'- %s (`%h`)' \
-              --no-merges
-
-            echo
-            echo
-          } > /tmp/release-notes.md
-
-          if [ -f CHANGELOG.md ]; then
-            cat CHANGELOG.md >> /tmp/release-notes.md
-          fi
-
-          mv /tmp/release-notes.md CHANGELOG.md
 
       - name: Commit and tag
         env:
           VERSION: ${{ steps.version.outputs.version }}
           TAG: ${{ steps.version.outputs.tag }}
         run: |
-          git add Cargo.toml Cargo.lock CHANGELOG.md
+          git add Cargo.toml Cargo.lock
           git commit -m "chore(release): v$VERSION"
           git tag -a "$TAG" -m "Release $TAG"
           git push origin "HEAD:${GITHUB_REF_NAME}"
@@ -415,6 +378,25 @@ jobs:
         run: |
           find release-assets -type f -maxdepth 2 -print
 
+      - name: Generate release notes from tag range
+        env:
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          PREVIOUS_TAG=$(git tag --sort=-version:refname | awk -v current="$TAG" '$0 != current {print; exit}')
+
+          {
+            echo "## Changes in $TAG"
+            echo
+            if [ -n "$PREVIOUS_TAG" ]; then
+              git log --no-merges --invert-grep --grep='^chore(release):' --pretty=format:'- %s (`%h`)' "$PREVIOUS_TAG..$TAG"
+            else
+              git log --no-merges --invert-grep --grep='^chore(release):' --pretty=format:'- %s (`%h`)' "$TAG"
+            fi
+            echo
+          } > /tmp/release-notes.md
+
+          cat /tmp/release-notes.md
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -423,5 +405,5 @@ jobs:
           gh release create "$TAG" \
             release-assets/* \
             --title "URL Scheme Handler $TAG" \
-            --notes-file CHANGELOG.md \
+            --notes-file /tmp/release-notes.md \
             --verify-tag

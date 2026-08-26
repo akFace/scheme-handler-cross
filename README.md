@@ -1,6 +1,6 @@
-- # URL Scheme Handler — Rust 2.1
+# URL Scheme Handler — Rust 2.1
 
-基于 `LuckyPuppy514/url-scheme-handler` 的实际行为利用 AI 重写，支持 Windows、Linux、macOS。
+基于 `LuckyPuppy514/url-scheme-handler` 的实际行为重写，支持 Windows、Linux、macOS。
 
 ## 直接构建
 
@@ -81,13 +81,13 @@ function compress(str) {
   return btoa(String.fromCharCode(...pako.gzip(str)));
 }
 
-const app_name = "MPV";
+const app_name = 'MPV';
 const args = [
   '"https://example.com/example.mp4"',
-  '--force-media-title="URL Scheme Handler"',
+  '--force-media-title="URL Scheme Handler"'
 ];
 
-window.open(`ush://${app_name}?${compress(args.join(" "))}`, "_self");
+window.open(`ush://${app_name}?${compress(args.join(' '))}`, '_self');
 ```
 
 ## 平台行为
@@ -191,6 +191,7 @@ macOS：
 2. URL 内容最终会启动本地用户配置的程序，不要允许不可信网页任意构造 `ush://` 参数。
 3. macOS 发布时建议对 `.app` 进行代码签名和 notarization。
 4. `cargo build --release` 需要在目标平台本机执行，或使用对应的 Rust target 和完整的系统 SDK/toolchain。
+
 
 ## Windows 编译
 

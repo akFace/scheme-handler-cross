@@ -17,7 +17,7 @@ use std::{
 };
 
 #[cfg(target_os = "macos")]
-use std::sync::mpsc::{self, Receiver};
+use std::{sync::mpsc, time::{Duration, Instant}};
 
 use thiserror::Error;
 use urlencoding::decode;
@@ -126,12 +126,56 @@ fn decompress_payload(payload: &str) -> Result<String, AppError> {
 #[cfg(windows)]
 fn run_target(path: &str, command_line: &str) -> Result<(), AppError> {
     use std::os::windows::process::CommandExt;
+
     Command::new(path)
         .raw_arg(command_line)
         .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
         .spawn()
         .map(|_| ())
         .map_err(|e| AppError::Command(format!("{path}: {e}")))
+}
+
+#[cfg(target_os = "macos")]
+fn run_target(path: &str, command_line: &str) -> Result<(), AppError> {
+    let args = shell_words::split(command_line)
+        .map_err(|e| AppError::Command(format!("cannot parse command arguments: {e}")))?;
+    if args.is_empty() {
+        return Err(AppError::EmptyCommand);
+    }
+
+    let path_buf = std::path::Path::new(path);
+    let is_app_bundle = path_buf
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .map(|ext| ext.eq_ignore_ascii_case("app"))
+        .unwrap_or(false);
+
+    if is_app_bundle {
+        // Use LaunchServices instead of executing the .app directory itself.
+        // This preserves normal macOS application launching behavior.
+        Command::new("/usr/bin/open")
+            .arg("-a")
+            .arg(path)
+            .arg("--args")
+            .args(args)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .map(|_| ())
+            .map_err(|e| AppError::Command(format!("open -a {path}: {e}")))
+    } else {
+        Command::new(path)
+            .args(args)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .map(|_| ())
+            .map_err(|e| AppError::Command(format!("{path}: {e}")))
+    }
 }
 
 #[cfg(all(not(windows), not(target_os = "macos")))]
@@ -141,77 +185,15 @@ fn run_target(path: &str, command_line: &str) -> Result<(), AppError> {
     if args.is_empty() {
         return Err(AppError::EmptyCommand);
     }
+
     Command::new(path)
         .args(args)
         .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
         .spawn()
         .map(|_| ())
         .map_err(|e| AppError::Command(format!("{path}: {e}")))
-}
-
-#[cfg(target_os = "macos")]
-fn run_target(path: &str, command_line: &str) -> Result<(), AppError> {
-    use std::path::Path;
-
-    let args = shell_words::split(command_line)
-        .map_err(|e| AppError::Command(format!("cannot parse command arguments: {e}")))?;
-    if args.is_empty() {
-        return Err(AppError::EmptyCommand);
-    }
-
-    // A macOS .app is a bundle/directory, not an executable file. Calling
-    // Command::new("/Applications/mpv.app") therefore results in EACCES
-    // (Permission denied). Resolve CFBundleExecutable and launch the actual
-    // binary under Contents/MacOS instead.
-    let target = Path::new(path);
-    let executable = if target.extension().and_then(|v| v.to_str()) == Some("app") {
-        let plist = target.join("Contents").join("Info.plist");
-        let output = Command::new("/usr/bin/plutil")
-            .args([
-                "-extract",
-                "CFBundleExecutable",
-                "raw",
-                "-o",
-                "-",
-                plist.to_string_lossy().as_ref(),
-            ])
-            .output()
-            .map_err(|e| AppError::Command(format!(
-                "cannot read {path}/Contents/Info.plist: {e}"
-            )))?;
-
-        if !output.status.success() {
-            return Err(AppError::Command(format!(
-                "cannot read CFBundleExecutable from {path}/Contents/Info.plist: {}",
-                String::from_utf8_lossy(&output.stderr).trim()
-            )));
-        }
-
-        let executable_name = String::from_utf8_lossy(&output.stdout).trim().to_string();
-        if executable_name.is_empty() {
-            return Err(AppError::Command(format!(
-                "CFBundleExecutable is missing in {path}/Contents/Info.plist"
-            )));
-        }
-
-        target.join("Contents").join("MacOS").join(executable_name)
-    } else {
-        target.to_path_buf()
-    };
-
-    if !executable.exists() {
-        return Err(AppError::Command(format!(
-            "macOS executable does not exist: {}",
-            executable.display()
-        )));
-    }
-
-    Command::new(&executable)
-        .args(args)
-        .stdin(Stdio::null())
-        .spawn()
-        .map(|_| ())
-        .map_err(|e| AppError::Command(format!("{}: {e}", executable.display())))
 }
 
 fn execute_url(input: &str) -> Result<(), AppError> {
@@ -233,8 +215,6 @@ fn execute_url(input: &str) -> Result<(), AppError> {
     }
 
     println!("Executing: {path} {command_line}");
-    // Do not wait for GUI applications such as mpv to exit. The handler should
-    // return immediately after successfully spawning the target process.
     run_target(path, &command_line)
 }
 
@@ -254,12 +234,40 @@ fn show_info(title: &str, message: &str) {
         .show();
 }
 
+#[cfg(target_os = "macos")]
+fn start_macos_url_worker() -> Result<(), Box<dyn Error + Send + Sync>> {
+    let (sender, receiver) = mpsc::channel::<String>();
+
+    std::thread::Builder::new()
+        .name("ush-url-worker".into())
+        .spawn(move || {
+            while let Ok(url) = receiver.recv() {
+                if let Err(error) = execute_url(&url) {
+                    // URL-triggered execution must not depend on the GUI being
+                    // visible or focused. Log errors instead of opening a dialog.
+                    eprintln!("URL Scheme Handler: {error}");
+                }
+            }
+        })?;
+
+    platform::install_url_handler(sender)?;
+    Ok(())
+}
+
 fn open_settings() {
+    #[cfg(target_os = "macos")]
+    let initial_visible = !platform::url_was_received();
+
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default()
-            .with_inner_size([700.0, 350.0])
-            .with_min_inner_size([500.0, 260.0])
-            .with_resizable(true),
+        viewport: {
+            let viewport = egui::ViewportBuilder::default()
+                .with_inner_size([700.0, 350.0])
+                .with_min_inner_size([500.0, 260.0])
+                .with_resizable(true);
+            #[cfg(target_os = "macos")]
+            let viewport = viewport.with_visible(initial_visible);
+            viewport
+        },
         centered: true,
         ..Default::default()
     };
@@ -274,20 +282,20 @@ fn open_settings() {
 struct UrlSchemeHandler {
     config: Config,
     #[cfg(target_os = "macos")]
-    url_receiver: Receiver<String>,
+    started_at: Instant,
+    #[cfg(target_os = "macos")]
+    ui_visibility_decided: bool,
 }
 
 impl UrlSchemeHandler {
     fn new() -> Self {
         #[cfg(target_os = "macos")]
         {
-            let (sender, receiver) = mpsc::channel();
-            if let Err(e) = platform::install_url_handler(sender) {
-                eprintln!("macOS URL handler installation failed: {e}");
-            }
+            let received = platform::url_was_received();
             return Self {
                 config: Config::load(),
-                url_receiver: receiver,
+                started_at: Instant::now(),
+                ui_visibility_decided: received,
             };
         }
 
@@ -307,9 +315,20 @@ impl UrlSchemeHandler {
 impl eframe::App for UrlSchemeHandler {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         #[cfg(target_os = "macos")]
-        while let Ok(url) = self.url_receiver.try_recv() {
-            if let Err(e) = execute_url(&url) {
-                show_error("URL Scheme Handler", e);
+        {
+            // URL invocations are processed by the native Apple Event callback
+            // and a worker thread, not by egui's update loop. This means the
+            // app can stay hidden/in the background and still launch the target.
+            if !self.ui_visibility_decided {
+                if platform::url_was_received() {
+                    self.ui_visibility_decided = true;
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Visible(false));
+                } else if self.started_at.elapsed() >= Duration::from_millis(800) {
+                    self.ui_visibility_decided = true;
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Visible(true));
+                } else {
+                    ctx.request_repaint_after(Duration::from_millis(50));
+                }
             }
         }
 
@@ -341,13 +360,19 @@ impl eframe::App for UrlSchemeHandler {
                             {
                                 let mut dialog = FileDialog::new();
                                 #[cfg(windows)]
-                                { dialog = dialog.add_filter("Executable", &["exe"]); }
+                                {
+                                    dialog = dialog.add_filter("Executable", &["exe"]);
+                                }
                                 if let Some(path) = dialog.pick_file() {
-                                    self.config.apps[index].path = Some(path.to_string_lossy().into_owned());
+                                    self.config.apps[index].path =
+                                        Some(path.to_string_lossy().into_owned());
                                     self.persist();
                                 }
                             }
-                            if ui.add_sized([35.0, 30.0], egui::Button::new("➖")).clicked() {
+                            if ui
+                                .add_sized([35.0, 30.0], egui::Button::new("➖"))
+                                .clicked()
+                            {
                                 remove = Some(index);
                             }
                         });
@@ -420,6 +445,15 @@ impl eframe::App for UrlSchemeHandler {
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = env::args().collect();
 
+    #[cfg(target_os = "macos")]
+    if args.len() == 1 {
+        // Install the native Apple Event handler before starting eframe. The
+        // worker handles ush:// URLs independently of the GUI event loop.
+        start_macos_url_worker()?;
+        open_settings();
+        return Ok(());
+    }
+
     match args.as_slice() {
         [_] => open_settings(),
         [_, command, input] if command == "run" => {
@@ -439,5 +473,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             );
         }
     }
+
     Ok(())
 }
