@@ -3255,7 +3255,7 @@ dependencies = [
 
 [[package]]
 name = "url-scheme-handler"
-version = "2.2.2"
+version = "2.2.3"
 dependencies = [
  "base64",
  "cc",
