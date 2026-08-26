@@ -124,17 +124,18 @@ fn decompress_payload(payload: &str) -> Result<String, AppError> {
 }
 
 #[cfg(windows)]
-fn run_target(path: &str, command_line: &str) -> Result<std::process::Output, AppError> {
+fn run_target(path: &str, command_line: &str) -> Result<(), AppError> {
     use std::os::windows::process::CommandExt;
     Command::new(path)
         .raw_arg(command_line)
         .stdin(Stdio::null())
-        .output()
+        .spawn()
+        .map(|_| ())
         .map_err(|e| AppError::Command(format!("{path}: {e}")))
 }
 
-#[cfg(not(windows))]
-fn run_target(path: &str, command_line: &str) -> Result<std::process::Output, AppError> {
+#[cfg(all(not(windows), not(target_os = "macos")))]
+fn run_target(path: &str, command_line: &str) -> Result<(), AppError> {
     let args = shell_words::split(command_line)
         .map_err(|e| AppError::Command(format!("cannot parse command arguments: {e}")))?;
     if args.is_empty() {
@@ -143,8 +144,74 @@ fn run_target(path: &str, command_line: &str) -> Result<std::process::Output, Ap
     Command::new(path)
         .args(args)
         .stdin(Stdio::null())
-        .output()
+        .spawn()
+        .map(|_| ())
         .map_err(|e| AppError::Command(format!("{path}: {e}")))
+}
+
+#[cfg(target_os = "macos")]
+fn run_target(path: &str, command_line: &str) -> Result<(), AppError> {
+    use std::path::Path;
+
+    let args = shell_words::split(command_line)
+        .map_err(|e| AppError::Command(format!("cannot parse command arguments: {e}")))?;
+    if args.is_empty() {
+        return Err(AppError::EmptyCommand);
+    }
+
+    // A macOS .app is a bundle/directory, not an executable file. Calling
+    // Command::new("/Applications/mpv.app") therefore results in EACCES
+    // (Permission denied). Resolve CFBundleExecutable and launch the actual
+    // binary under Contents/MacOS instead.
+    let target = Path::new(path);
+    let executable = if target.extension().and_then(|v| v.to_str()) == Some("app") {
+        let plist = target.join("Contents").join("Info.plist");
+        let output = Command::new("/usr/bin/plutil")
+            .args([
+                "-extract",
+                "CFBundleExecutable",
+                "raw",
+                "-o",
+                "-",
+                plist.to_string_lossy().as_ref(),
+            ])
+            .output()
+            .map_err(|e| AppError::Command(format!(
+                "cannot read {path}/Contents/Info.plist: {e}"
+            )))?;
+
+        if !output.status.success() {
+            return Err(AppError::Command(format!(
+                "cannot read CFBundleExecutable from {path}/Contents/Info.plist: {}",
+                String::from_utf8_lossy(&output.stderr).trim()
+            )));
+        }
+
+        let executable_name = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if executable_name.is_empty() {
+            return Err(AppError::Command(format!(
+                "CFBundleExecutable is missing in {path}/Contents/Info.plist"
+            )));
+        }
+
+        target.join("Contents").join("MacOS").join(executable_name)
+    } else {
+        target.to_path_buf()
+    };
+
+    if !executable.exists() {
+        return Err(AppError::Command(format!(
+            "macOS executable does not exist: {}",
+            executable.display()
+        )));
+    }
+
+    Command::new(&executable)
+        .args(args)
+        .stdin(Stdio::null())
+        .spawn()
+        .map(|_| ())
+        .map_err(|e| AppError::Command(format!("{}: {e}", executable.display())))
 }
 
 fn execute_url(input: &str) -> Result<(), AppError> {
@@ -166,18 +233,9 @@ fn execute_url(input: &str) -> Result<(), AppError> {
     }
 
     println!("Executing: {path} {command_line}");
-    let output = run_target(path, &command_line)?;
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        return Err(AppError::Command(format!(
-            "process exited with {}\n{}{}",
-            output.status,
-            stderr,
-            stdout
-        )));
-    }
-    Ok(())
+    // Do not wait for GUI applications such as mpv to exit. The handler should
+    // return immediately after successfully spawning the target process.
+    run_target(path, &command_line)
 }
 
 fn show_error(title: &str, error: impl std::fmt::Display) {
