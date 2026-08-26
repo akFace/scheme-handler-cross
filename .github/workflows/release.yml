@@ -282,7 +282,9 @@ jobs:
   build-macos-x86:
     name: Build macOS Intel DMG
     needs: prepare
-    runs-on: macos-13
+    # macos-13 is no longer available on GitHub-hosted runners.
+    # Use the current Intel macOS runner.
+    runs-on: macos-15-intel
 
     steps:
       - name: Checkout release tag
@@ -303,7 +305,7 @@ jobs:
         env:
           TARGET: x86_64-apple-darwin
           VERSION: ${{ needs.prepare.outputs.version }}
-        run: ./packaging/macos/build-app.sh
+        run: bash ./packaging/macos/build-app.sh
 
       - name: Create DMG
         env:
@@ -356,7 +358,7 @@ jobs:
         env:
           TARGET: aarch64-apple-darwin
           VERSION: ${{ needs.prepare.outputs.version }}
-        run: ./packaging/macos/build-app.sh
+        run: bash ./packaging/macos/build-app.sh
 
       - name: Create DMG
         env:
