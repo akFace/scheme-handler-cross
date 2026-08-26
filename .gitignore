@@ -1,0 +1,4 @@
+/target
+config.json
+*.tmp
+URL Scheme Handler.app

@@ -1,0 +1,43 @@
+[package]
+name = "url-scheme-handler"
+version = "2.1.2"
+edition = "2021"
+description = "Cross-platform URL Scheme Handler"
+license = "MIT"
+build = "build.rs"
+
+[dependencies]
+base64 = "0.22.1"
+eframe = "0.29.0"
+flate2 = "1.0.35"
+rfd = "0.15.1"
+serde = { version = "1.0.215", features = ["derive"] }
+serde_json = "1.0.133"
+urlencoding = "2.1.3"
+thiserror = "2.0"
+shell-words = "1.1"
+dirs = "6.0"
+
+[target.'cfg(windows)'.dependencies]
+winreg = "0.52.0"
+
+[target.'cfg(target_os = "macos")'.build-dependencies]
+cc = "1.1"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true
+
+[package.metadata.deb]
+maintainer = "LuckyPuppy514 <github@example.com>"
+copyright = "2026, LuckyPuppy514"
+section = "utils"
+priority = "optional"
+assets = [
+    ["target/release/url-scheme-handler", "usr/bin/url-scheme-handler", "755"],
+    ["packaging/linux/url-scheme-handler.desktop", "usr/share/applications/url-scheme-handler.desktop", "644"]
+]
+maintainer-scripts = "packaging/linux/debian"
+depends = "$auto, libgtk-3-0, libx11-6, libxcb1, libxcb-render0, libxcb-shape0, libxcb-xfixes0, libxdo3, xdg-utils, desktop-file-utils"

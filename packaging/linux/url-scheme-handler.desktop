@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=URL Scheme Handler
+Comment=Handle ush:// URLs
+Exec=/usr/bin/url-scheme-handler run %u
+NoDisplay=true
+Terminal=false
+MimeType=x-scheme-handler/ush;
+X-MultipleArgs=false
