@@ -244,6 +244,11 @@ jobs:
              AppDir/usr/bin/url-scheme-handler
           chmod +x AppDir/usr/bin/url-scheme-handler
 
+          mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
+
+          cp packaging/linux/url-scheme-handler.png \
+            AppDir/usr/share/icons/hicolor/256x256/apps/url-scheme-handler.png
+
           cat > AppDir/usr/share/applications/url-scheme-handler.desktop <<'EOF'
           [Desktop Entry]
           Type=Application
@@ -252,6 +257,7 @@ jobs:
           Exec=url-scheme-handler %u
           Terminal=false
           Categories=Utility;
+          Icon=url-scheme-handler
           MimeType=x-scheme-handler/ush;
           EOF
 
@@ -335,6 +341,11 @@ jobs:
 
           chmod +x AppDir/usr/bin/url-scheme-handler
 
+          mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
+
+          cp packaging/linux/url-scheme-handler.png \
+            AppDir/usr/share/icons/hicolor/256x256/apps/url-scheme-handler.png
+
           cat > AppDir/usr/share/applications/url-scheme-handler.desktop <<'EOF'
           [Desktop Entry]
           Type=Application
@@ -343,6 +354,7 @@ jobs:
           Exec=url-scheme-handler %u
           Terminal=false
           Categories=Utility;
+          Icon=url-scheme-handler
           MimeType=x-scheme-handler/ush;
           EOF
 

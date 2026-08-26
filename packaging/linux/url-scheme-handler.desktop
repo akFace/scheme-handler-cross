@@ -1,10 +1,9 @@
 [Desktop Entry]
-Version=1.0
 Type=Application
 Name=URL Scheme Handler
-Comment=Handle ush:// URLs
-Exec=/usr/bin/url-scheme-handler run %u
-NoDisplay=true
+Comment=Cross-platform URL scheme handler
+Exec=url-scheme-handler %u
 Terminal=false
+Categories=Utility;
+Icon=url-scheme-handler
 MimeType=x-scheme-handler/ush;
-X-MultipleArgs=false
