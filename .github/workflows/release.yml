@@ -502,6 +502,6 @@ jobs:
         run: |
           gh release create "$TAG" \
             release-assets/* \
-            --title "URL Scheme Handler $TAG" \
+            --title "$TAG" \
             --notes-file /tmp/release-notes.md \
             --verify-tag
