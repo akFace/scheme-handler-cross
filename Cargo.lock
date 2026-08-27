@@ -2722,6 +2722,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "scheme-handler"
+version = "2.2.6"
+dependencies = [
+ "base64",
+ "cc",
+ "dirs",
+ "eframe",
+ "flate2",
+ "rfd",
+ "serde",
+ "serde_json",
+ "shell-words",
+ "thiserror 2.0.20",
+ "urlencoding",
+ "winreg",
+ "winres",
+]
+
+[[package]]
 name = "scoped-tls"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3260,25 +3279,6 @@ dependencies = [
  "percent-encoding",
  "serde",
  "serde_derive",
-]
-
-[[package]]
-name = "url-scheme-handler"
-version = "2.2.6"
-dependencies = [
- "base64",
- "cc",
- "dirs",
- "eframe",
- "flate2",
- "rfd",
- "serde",
- "serde_json",
- "shell-words",
- "thiserror 2.0.20",
- "urlencoding",
- "winreg",
- "winres",
 ]
 
 [[package]]

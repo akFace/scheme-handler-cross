@@ -5,9 +5,9 @@
     <key>CFBundleDisplayName</key>
     <string>scheme-handler</string>
     <key>CFBundleExecutable</key>
-    <string>url-scheme-handler</string>
+    <string>scheme-handler</string>
     <key>CFBundleIdentifier</key>
-    <string>com.luckypuppy.url-scheme-handler</string>
+    <string>com.luckypuppy.scheme-handler</string>
     <key>CFBundleName</key>
     <string>scheme-handler</string>
     <key>CFBundlePackageType</key>

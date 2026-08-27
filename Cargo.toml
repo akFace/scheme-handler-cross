@@ -1,5 +1,5 @@
 [package]
-name = "url-scheme-handler"
+name = "scheme-handler"
 version = "2.2.6"
 edition = "2021"
 description = "Cross-platform URL Scheme Handler"
@@ -39,9 +39,9 @@ copyright = "2026, LuckyPuppy514"
 section = "utils"
 priority = "optional"
 assets = [
-    ["target/release/url-scheme-handler", "usr/bin/url-scheme-handler", "755"],
-    ["packaging/linux/url-scheme-handler.desktop", "usr/share/applications/url-scheme-handler.desktop", "644"],
-    ["packaging/icon.png", "usr/share/icons/hicolor/512x512/apps/url-scheme-handler.png", "644"]
+    ["target/release/scheme-handler", "usr/bin/scheme-handler", "755"],
+    ["packaging/linux/scheme-handler.desktop", "usr/share/applications/scheme-handler.desktop", "644"],
+    ["packaging/icon.png", "usr/share/icons/hicolor/512x512/apps/scheme-handler.png", "644"]
 ]
 maintainer-scripts = "packaging/linux/debian"
 depends = "$auto, libgtk-3-0, libx11-6, libxcb1, libxcb-render0, libxcb-shape0, libxcb-xfixes0, libxdo3, xdg-utils, desktop-file-utils"

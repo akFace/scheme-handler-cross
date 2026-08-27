@@ -4,8 +4,8 @@
 
 Release 提供两个文件：
 
-- `url-scheme-handler-<version>-windows-x86_64.exe`
-- `url-scheme-handler-<version>-windows-x86_64-portable.zip`
+- `scheme-handler-<version>-windows-x86_64.exe`
+- `scheme-handler-<version>-windows-x86_64-portable.zip`
 
 Windows 不使用 Setup 安装器。
 
@@ -20,13 +20,13 @@ Windows 不使用 Setup 安装器。
 Release 提供：
 
 ```text
-url-scheme-handler_<version>_amd64.deb
+scheme-handler_<version>_amd64.deb
 ```
 
 Ubuntu / Debian：
 
 ```bash
-sudo apt install ./url-scheme-handler_<version>_amd64.deb
+sudo apt install ./scheme-handler_<version>_amd64.deb
 ```
 
 安装后会注册：
@@ -38,7 +38,7 @@ x-scheme-handler/ush
 卸载：
 
 ```bash
-sudo apt remove url-scheme-handler
+sudo apt remove scheme-handler
 ```
 
 ## macOS
@@ -75,13 +75,13 @@ ush://
 
 ```text
 Windows:
-  url-scheme-handler-<version>-windows-x86_64.exe
-  url-scheme-handler-<version>-windows-x86_64-portable.zip
+  scheme-handler-<version>-windows-x86_64.exe
+  scheme-handler-<version>-windows-x86_64-portable.zip
 
 Linux:
-  url-scheme-handler_<version>_amd64.deb
+  scheme-handler_<version>_amd64.deb
 
 macOS:
-  url-scheme-handler-<version>-macos-x86_64.dmg
-  url-scheme-handler-<version>-macos-arm64.dmg
+  scheme-handler-<version>-macos-x86_64.dmg
+  scheme-handler-<version>-macos-arm64.dmg
 ```

@@ -61,7 +61,7 @@ struct AppConfig {
 
 fn config_path() -> PathBuf {
     if let Some(dir) = dirs::config_dir() {
-        return dir.join("url-scheme-handler").join(CONFIG_FILE);
+        return dir.join("scheme-handler").join(CONFIG_FILE);
     }
 
     env::current_exe()
@@ -473,7 +473,7 @@ fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
         _ => {
             show_error(
                 "scheme-handler",
-                "Usage: url-scheme-handler run ush://<app_name>?<gzip_base64>",
+                "Usage: scheme-handler run ush://<app_name>?<gzip_base64>",
             );
         }
     }

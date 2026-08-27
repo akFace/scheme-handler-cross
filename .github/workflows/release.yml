@@ -151,18 +151,18 @@ jobs:
           VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           New-Item -ItemType Directory -Force -Path dist | Out-Null
-          Copy-Item "target\x86_64-pc-windows-msvc\release\url-scheme-handler.exe" "dist\url-scheme-handler.exe"
+          Copy-Item "target\x86_64-pc-windows-msvc\release\scheme-handler.exe" "dist\scheme-handler.exe"
           Copy-Item "README.md" "dist\README.md"
-          Compress-Archive -Path "dist\url-scheme-handler.exe", "dist\README.md" -DestinationPath "url-scheme-handler-${env:VERSION}-windows-x86_64-portable.zip"
-          Copy-Item "target\x86_64-pc-windows-msvc\release\url-scheme-handler.exe" "url-scheme-handler-${env:VERSION}-windows-x86_64.exe"
+          Compress-Archive -Path "dist\scheme-handler.exe", "dist\README.md" -DestinationPath "scheme-handler-${env:VERSION}-windows-x86_64-portable.zip"
+          Copy-Item "target\x86_64-pc-windows-msvc\release\scheme-handler.exe" "scheme-handler-${env:VERSION}-windows-x86_64.exe"
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows-portable
           path: |
-            url-scheme-handler-${{ needs.prepare.outputs.version }}-windows-x86_64.exe
-            url-scheme-handler-${{ needs.prepare.outputs.version }}-windows-x86_64-portable.zip
+            scheme-handler-${{ needs.prepare.outputs.version }}-windows-x86_64.exe
+            scheme-handler-${{ needs.prepare.outputs.version }}-windows-x86_64-portable.zip
 
   # ------------------------------------------------------------
   # Linux x86_64: DEB + AppImage
@@ -208,8 +208,8 @@ jobs:
       - name: Build Debian package
         run: |
           mkdir -p target/release
-          cp target/x86_64-unknown-linux-gnu/release/url-scheme-handler target/release/url-scheme-handler
-          cargo deb --no-build --output "url-scheme-handler_${{ needs.prepare.outputs.version }}_amd64.deb"
+          cp target/x86_64-unknown-linux-gnu/release/scheme-handler target/release/scheme-handler
+          cargo deb --no-build --output "scheme-handler_${{ needs.prepare.outputs.version }}_amd64.deb"
 
       - name: Prepare AppDir
         run: |
@@ -218,17 +218,17 @@ jobs:
           mkdir -p AppDir/usr/share/applications
           mkdir -p AppDir/usr/share/icons/hicolor/512x512/apps
 
-          cp target/x86_64-unknown-linux-gnu/release/url-scheme-handler \
-             AppDir/usr/bin/url-scheme-handler
-          chmod +x AppDir/usr/bin/url-scheme-handler
+          cp target/x86_64-unknown-linux-gnu/release/scheme-handler \
+             AppDir/usr/bin/scheme-handler
+          chmod +x AppDir/usr/bin/scheme-handler
 
-          cp packaging/linux/url-scheme-handler.desktop \
-             AppDir/usr/share/applications/url-scheme-handler.desktop
+          cp packaging/linux/scheme-handler.desktop \
+             AppDir/usr/share/applications/scheme-handler.desktop
 
           cp packaging/icon.png \
-             AppDir/usr/share/icons/hicolor/512x512/apps/url-scheme-handler.png
+             AppDir/usr/share/icons/hicolor/512x512/apps/scheme-handler.png
 
-          cp packaging/linux/url-scheme-handler.desktop AppDir/url-scheme-handler.desktop
+          cp packaging/linux/scheme-handler.desktop AppDir/scheme-handler.desktop
 
       - name: Download linuxdeploy x86_64
         run: |
@@ -247,16 +247,16 @@ jobs:
           APPIMAGE=$(find . -maxdepth 1 -type f -name '*.AppImage' \
             ! -name 'linuxdeploy-*' | head -1)
           test -n "$APPIMAGE"
-          mv "$APPIMAGE" "url-scheme-handler-${VERSION}-linux-x86_64.AppImage"
-          chmod +x "url-scheme-handler-${VERSION}-linux-x86_64.AppImage"
+          mv "$APPIMAGE" "scheme-handler-${VERSION}-linux-x86_64.AppImage"
+          chmod +x "scheme-handler-${VERSION}-linux-x86_64.AppImage"
 
       - name: Upload Linux x86_64 artifacts
         uses: actions/upload-artifact@v4
         with:
           name: linux-x86_64
           path: |
-            url-scheme-handler_${{ needs.prepare.outputs.version }}_amd64.deb
-            url-scheme-handler-${{ needs.prepare.outputs.version }}-linux-x86_64.AppImage
+            scheme-handler_${{ needs.prepare.outputs.version }}_amd64.deb
+            scheme-handler-${{ needs.prepare.outputs.version }}-linux-x86_64.AppImage
 
   # ------------------------------------------------------------
   # Linux ARM64: AppImage on native ARM64 runner
@@ -303,17 +303,17 @@ jobs:
           mkdir -p AppDir/usr/share/applications
           mkdir -p AppDir/usr/share/icons/hicolor/512x512/apps
 
-          cp target/aarch64-unknown-linux-gnu/release/url-scheme-handler \
-             AppDir/usr/bin/url-scheme-handler
-          chmod +x AppDir/usr/bin/url-scheme-handler
+          cp target/aarch64-unknown-linux-gnu/release/scheme-handler \
+             AppDir/usr/bin/scheme-handler
+          chmod +x AppDir/usr/bin/scheme-handler
 
-          cp packaging/linux/url-scheme-handler.desktop \
-             AppDir/usr/share/applications/url-scheme-handler.desktop
+          cp packaging/linux/scheme-handler.desktop \
+             AppDir/usr/share/applications/scheme-handler.desktop
 
           cp packaging/icon.png \
-             AppDir/usr/share/icons/hicolor/512x512/apps/url-scheme-handler.png
+             AppDir/usr/share/icons/hicolor/512x512/apps/scheme-handler.png
 
-          cp packaging/linux/url-scheme-handler.desktop AppDir/url-scheme-handler.desktop
+          cp packaging/linux/scheme-handler.desktop AppDir/scheme-handler.desktop
 
       - name: Download linuxdeploy ARM64
         run: |
@@ -332,15 +332,15 @@ jobs:
           APPIMAGE=$(find . -maxdepth 1 -type f -name '*.AppImage' \
             ! -name 'linuxdeploy-*' | head -1)
           test -n "$APPIMAGE"
-          mv "$APPIMAGE" "url-scheme-handler-${VERSION}-linux-arm64.AppImage"
-          chmod +x "url-scheme-handler-${VERSION}-linux-arm64.AppImage"
+          mv "$APPIMAGE" "scheme-handler-${VERSION}-linux-arm64.AppImage"
+          chmod +x "scheme-handler-${VERSION}-linux-arm64.AppImage"
 
       - name: Upload Linux ARM64 artifact
         uses: actions/upload-artifact@v4
         with:
           name: linux-arm64
           path: |
-            url-scheme-handler-${{ needs.prepare.outputs.version }}-linux-arm64.AppImage
+            scheme-handler-${{ needs.prepare.outputs.version }}-linux-arm64.AppImage
 
   # ------------------------------------------------------------
   # macOS Intel: unsigned DMG
@@ -384,14 +384,14 @@ jobs:
             -srcfolder dmg-root \
             -ov \
             -format UDZO \
-            "url-scheme-handler-${VERSION}-macos-x86_64.dmg"
+            "scheme-handler-${VERSION}-macos-x86_64.dmg"
 
       - name: Upload macOS Intel artifact
         uses: actions/upload-artifact@v4
         with:
           name: macos-x86_64
           path: |
-            url-scheme-handler-${{ needs.prepare.outputs.version }}-macos-x86_64.dmg
+            scheme-handler-${{ needs.prepare.outputs.version }}-macos-x86_64.dmg
 
   # ------------------------------------------------------------
   # macOS Apple Silicon: unsigned DMG
@@ -435,14 +435,14 @@ jobs:
             -srcfolder dmg-root \
             -ov \
             -format UDZO \
-            "url-scheme-handler-${VERSION}-macos-arm64.dmg"
+            "scheme-handler-${VERSION}-macos-arm64.dmg"
 
       - name: Upload macOS ARM64 artifact
         uses: actions/upload-artifact@v4
         with:
           name: macos-arm64
           path: |
-            url-scheme-handler-${{ needs.prepare.outputs.version }}-macos-arm64.dmg
+            scheme-handler-${{ needs.prepare.outputs.version }}-macos-arm64.dmg
 
   # ------------------------------------------------------------
   # GitHub Release

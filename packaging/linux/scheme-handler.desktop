@@ -2,8 +2,8 @@
 Type=Application
 Name=scheme-handler
 Comment=Cross-platform URL scheme handler
-Exec=url-scheme-handler %u
+Exec=scheme-handler %u
 Terminal=false
 Categories=Utility;
-Icon=url-scheme-handler
+Icon=scheme-handler
 MimeType=x-scheme-handler/ush;

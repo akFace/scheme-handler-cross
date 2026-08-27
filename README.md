@@ -1,6 +1,6 @@
-# scheme-handler — Rust 构建跨平台版
+# scheme-handler-cross — Rust 构建跨平台版
 
-基于 [LuckyPuppy514/url-scheme-handler](https://github.com/LuckyPuppy514/url-scheme-handler) 的实际行为功能，利用 AI 以 Rust 语言重写，构建跨平台，支持 Windows、Linux、macOS。
+基于 [LuckyPuppy514/url-scheme-handler](https://github.com/LuckyPuppy514/url-scheme-handler) 的实际功能，以 Rust 语言重写，构建跨平台，支持 Windows、Linux、macOS。
 
 ## 简介
 
@@ -10,8 +10,8 @@
 
 ## 🧱 下载安装
 
-- 🎯 [前往 releases 下载安装](https://github.com/akFace/url-scheme-handler-cross/releases)，选择对应的平台
-- 👉 详细安装方法： [查看 RELEASE.md](https://github.com/akFace/url-scheme-handler-cross/blob/main/RELEASE.md)
+- 🎯 [前往 releases 下载安装](https://github.com/akFace/scheme-handler-cross/releases)，选择对应的平台
+- 👉 详细安装方法： [查看 RELEASE.md](https://github.com/akFace/scheme-handler-cross/blob/main/RELEASE.md)
 
 ## ✍️ 使用
 
@@ -22,7 +22,7 @@
 
 - 以 MPV 播放器为例：如图 ② 步骤中 -->Windows 系列选择播放器安装目录下的`mpv.exe`，macOS 系统选择 `/Applications/mpv.app`，Linux 未测试（没设备）
 
-![20241125202543](https://github.com/akFace/url-scheme-handler-cross/blob/main/screenshot/Snipaste_2026-07-16_17-53-00.jpg?raw=true)
+![20241125202543](https://github.com/akFace/scheme-handler-cross/blob/main/screenshot/Snipaste_2026-07-16_17-53-00.jpg?raw=true)
 
 > **注意：应用名称应与脚本中的唤起应用名称保持一致（大小写也需一致）**
 
@@ -60,7 +60,7 @@ app_path "https://example.com/example.mp4" --force-media-title="scheme-handler"
 
 ## 文档
 
-[查看 wiki](https://github.com/akFace/url-scheme-handler-cross/wiki)
+[查看 wiki](https://github.com/akFace/scheme-handler-cross/wiki)
 
 ## Release packages
 

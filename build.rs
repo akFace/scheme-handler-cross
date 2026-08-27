@@ -8,7 +8,7 @@ fn main() {
         res.set("ProductName", "scheme-handler");
         res.set("FileDescription", "scheme-handler");
         res.set("InternalName", "scheme-handler");
-        res.set("OriginalFilename", "url-scheme-handler.exe");
+        res.set("OriginalFilename", "scheme-handler.exe");
         res.compile().expect("failed to compile Windows resources");
         println!("cargo:rerun-if-changed=packaging/windows/icon.ico");
     }

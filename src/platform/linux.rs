@@ -9,7 +9,7 @@ fn applications_dir() -> Result<PathBuf, Box<dyn Error + Send + Sync>> {
 }
 
 fn desktop_path() -> Result<PathBuf, Box<dyn Error + Send + Sync>> {
-    Ok(applications_dir()?.join("url-scheme-handler-ush.desktop"))
+    Ok(applications_dir()?.join("scheme-handler-ush.desktop"))
 }
 
 fn quote_exec_arg(path: &str) -> String {
@@ -36,7 +36,7 @@ pub fn register_scheme(scheme: &str) -> Result<(), Box<dyn Error + Send + Sync>>
     let _ = Command::new("update-desktop-database").arg(&dir).status();
     let mime = format!("x-scheme-handler/{scheme}");
     let _ = Command::new("xdg-mime")
-        .args(["default", "url-scheme-handler-ush.desktop", &mime])
+        .args(["default", "scheme-handler-ush.desktop", &mime])
         .status();
     Ok(())
 }
