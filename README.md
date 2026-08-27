@@ -1,4 +1,4 @@
-# scheme-handler-cross — Rust 构建跨平台版
+# Scheme-Handler — Rust 构建跨平台版
 
 基于 [LuckyPuppy514/url-scheme-handler](https://github.com/LuckyPuppy514/url-scheme-handler) 的实际功能，以 Rust 语言重写，构建跨平台，支持 Windows、Linux、macOS。
 
@@ -15,10 +15,9 @@
 
 ## ✍️ 使用
 
-1. 点击 `+ Add to Registry` 添加注册表
-2. 点击 `+` 添加应用
-3. 在左边输入框填写应用名称
-4. 在右边选择需要调用的应用
+1. 点击 `+` 添加应用
+2. 在左边输入框填写应用名称，在右边选择需要调用的应用
+3. 点击 `+ Add to Registry` 添加注册表
 
 - 以 MPV 播放器为例：如图 ② 步骤中 -->Windows 系列选择播放器安装目录下的`mpv.exe`，macOS 系统选择 `/Applications/mpv.app`，Linux 未测试（没设备）
 
