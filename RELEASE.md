@@ -53,12 +53,12 @@ DMG 未进行 Apple Developer 签名和 notarization。
 安装：
 
 1. 打开对应 DMG。
-2. 将 `URL Scheme Handler.app` 拖到 `Applications`。
+2. 将 `scheme-handler.app` 拖到 `Applications`。
 3. 第一次打开时，如果 macOS 阻止应用运行，进入：
 
    **系统设置 → 隐私与安全性**
 
-4. 在安全性提示中允许打开 `URL Scheme Handler`。
+4. 在安全性提示中允许打开 `scheme-handler`。
 5. 再次打开应用。
 
 macOS URL Scheme 已在 `Info.plist` 中注册：

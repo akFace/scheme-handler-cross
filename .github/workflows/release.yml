@@ -25,6 +25,9 @@ env:
   RUST_BACKTRACE: 1
 
 jobs:
+  # ------------------------------------------------------------
+  # Prepare: bump version, commit, create and push tag
+  # ------------------------------------------------------------
   prepare:
     name: Prepare release
     runs-on: ubuntu-latest
@@ -67,25 +70,19 @@ jobs:
 
           case "$BUMP" in
             major)
-              MAJOR=$((MAJOR + 1))
-              MINOR=0
-              PATCH=0
-              ;;
+              MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
             minor)
-              MINOR=$((MINOR + 1))
-              PATCH=0
-              ;;
+              MINOR=$((MINOR + 1)); PATCH=0 ;;
             patch)
-              PATCH=$((PATCH + 1))
-              ;;
+              PATCH=$((PATCH + 1)) ;;
             *)
               echo "Invalid bump: $BUMP"
-              exit 1
-              ;;
+              exit 1 ;;
           esac
 
           VERSION="${MAJOR}.${MINOR}.${PATCH}"
           TAG="v${VERSION}"
+
           if git rev-parse "$TAG" >/dev/null 2>&1; then
             echo "Tag $TAG already exists"
             exit 1
@@ -98,17 +95,14 @@ jobs:
           version = sys.argv[1]
           path = "Cargo.toml"
           text = open(path, encoding="utf-8").read()
-
           out, n = re.subn(
               r'(?ms)(^\[package\].*?^version\s*=\s*)"[^"]+"',
               rf'\1"{version}"',
               text,
               count=1,
           )
-
           if n != 1:
               raise SystemExit("failed to update Cargo.toml")
-
           open(path, "w", encoding="utf-8").write(out)
           PY
 
@@ -157,22 +151,12 @@ jobs:
           VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           New-Item -ItemType Directory -Force -Path dist | Out-Null
-
-          Copy-Item `
-            "target\x86_64-pc-windows-msvc\release\url-scheme-handler.exe" `
-            "dist\url-scheme-handler.exe"
-
+          Copy-Item "target\x86_64-pc-windows-msvc\release\url-scheme-handler.exe" "dist\url-scheme-handler.exe"
           Copy-Item "README.md" "dist\README.md"
+          Compress-Archive -Path "dist\url-scheme-handler.exe", "dist\README.md" -DestinationPath "url-scheme-handler-${env:VERSION}-windows-x86_64-portable.zip"
+          Copy-Item "target\x86_64-pc-windows-msvc\release\url-scheme-handler.exe" "url-scheme-handler-${env:VERSION}-windows-x86_64.exe"
 
-          Compress-Archive `
-            -Path "dist\url-scheme-handler.exe", "dist\README.md" `
-            -DestinationPath "url-scheme-handler-${env:VERSION}-windows-x86_64-portable.zip"
-
-          Copy-Item `
-            "target\x86_64-pc-windows-msvc\release\url-scheme-handler.exe" `
-            "url-scheme-handler-${env:VERSION}-windows-x86_64.exe"
-
-      - name: Upload Windows EXE
+      - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows-portable
@@ -181,10 +165,10 @@ jobs:
             url-scheme-handler-${{ needs.prepare.outputs.version }}-windows-x86_64-portable.zip
 
   # ------------------------------------------------------------
-  # Linux x86_64: AppImage + Debian package
+  # Linux x86_64: DEB + AppImage
   # ------------------------------------------------------------
   build-linux-x86_64:
-    name: Build Linux x86_64 AppImage + DEB
+    name: Build Linux x86_64 DEB + AppImage
     needs: prepare
     runs-on: ubuntu-22.04
 
@@ -208,7 +192,6 @@ jobs:
             libxcb-shape0-dev \
             libxcb-xfixes0-dev \
             libxdo-dev \
-            fuse3 \
             file
 
       - name: Install Rust
@@ -219,68 +202,55 @@ jobs:
       - name: Install cargo-deb
         run: cargo install cargo-deb --locked
 
-      - name: Build x86_64
+      - name: Build
         run: cargo build --release --target x86_64-unknown-linux-gnu
-
-      - name: Prepare cargo-deb
-        run: |
-          mkdir -p target/release
-          cp target/x86_64-unknown-linux-gnu/release/url-scheme-handler \
-             target/release/url-scheme-handler
 
       - name: Build Debian package
         run: |
-          cargo deb \
-            --no-build \
-            --output "url-scheme-handler_${{ needs.prepare.outputs.version }}_amd64.deb"
+          mkdir -p target/release
+          cp target/x86_64-unknown-linux-gnu/release/url-scheme-handler target/release/url-scheme-handler
+          cargo deb --no-build --output "url-scheme-handler_${{ needs.prepare.outputs.version }}_amd64.deb"
 
-      - name: Prepare AppImage AppDir
+      - name: Prepare AppDir
         run: |
           rm -rf AppDir
           mkdir -p AppDir/usr/bin
           mkdir -p AppDir/usr/share/applications
+          mkdir -p AppDir/usr/share/icons/hicolor/512x512/apps
 
           cp target/x86_64-unknown-linux-gnu/release/url-scheme-handler \
              AppDir/usr/bin/url-scheme-handler
           chmod +x AppDir/usr/bin/url-scheme-handler
 
-          mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
+          cp packaging/linux/url-scheme-handler.desktop \
+             AppDir/usr/share/applications/url-scheme-handler.desktop
 
-          cp packaging/linux/url-scheme-handler.png \
-            AppDir/usr/share/icons/hicolor/256x256/apps/url-scheme-handler.png
+          cp packaging/icon.png \
+             AppDir/usr/share/icons/hicolor/512x512/apps/url-scheme-handler.png
 
-          cat > AppDir/usr/share/applications/url-scheme-handler.desktop <<'EOF'
-          [Desktop Entry]
-          Type=Application
-          Name=URL Scheme Handler
-          Comment=Cross-platform URL scheme handler
-          Exec=url-scheme-handler %u
-          Terminal=false
-          Categories=Utility;
-          Icon=url-scheme-handler
-          MimeType=x-scheme-handler/ush;
-          EOF
+          cp packaging/linux/url-scheme-handler.desktop AppDir/url-scheme-handler.desktop
 
-          cp AppDir/usr/share/applications/url-scheme-handler.desktop \
-             AppDir/url-scheme-handler.desktop
-
-      - name: Download linuxdeploy
+      - name: Download linuxdeploy x86_64
         run: |
-          curl -L --fail -o linuxdeploy-x86_64.AppImage \
+          curl -L --fail --retry 3 \
+            -o linuxdeploy-x86_64.AppImage \
             https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
           chmod +x linuxdeploy-x86_64.AppImage
 
       - name: Build AppImage
         env:
+          APPIMAGE_EXTRACT_AND_RUN: 1
           VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           ./linuxdeploy-x86_64.AppImage --appdir AppDir --output appimage
+
           APPIMAGE=$(find . -maxdepth 1 -type f -name '*.AppImage' \
             ! -name 'linuxdeploy-*' | head -1)
           test -n "$APPIMAGE"
           mv "$APPIMAGE" "url-scheme-handler-${VERSION}-linux-x86_64.AppImage"
+          chmod +x "url-scheme-handler-${VERSION}-linux-x86_64.AppImage"
 
-      - name: Upload Linux x86_64 packages
+      - name: Upload Linux x86_64 artifacts
         uses: actions/upload-artifact@v4
         with:
           name: linux-x86_64
@@ -289,7 +259,7 @@ jobs:
             url-scheme-handler-${{ needs.prepare.outputs.version }}-linux-x86_64.AppImage
 
   # ------------------------------------------------------------
-  # Linux ARM64: AppImage
+  # Linux ARM64: AppImage on native ARM64 runner
   # ------------------------------------------------------------
   build-linux-arm64:
     name: Build Linux ARM64 AppImage
@@ -323,90 +293,61 @@ jobs:
         with:
           targets: aarch64-unknown-linux-gnu
 
-      - name: Build ARM64
-        run: |
-          cargo build --release \
-            --target aarch64-unknown-linux-gnu
+      - name: Build
+        run: cargo build --release --target aarch64-unknown-linux-gnu
 
       - name: Prepare AppDir
         run: |
           rm -rf AppDir
-
           mkdir -p AppDir/usr/bin
           mkdir -p AppDir/usr/share/applications
+          mkdir -p AppDir/usr/share/icons/hicolor/512x512/apps
 
-          cp \
-            target/aarch64-unknown-linux-gnu/release/url-scheme-handler \
-            AppDir/usr/bin/url-scheme-handler
-
+          cp target/aarch64-unknown-linux-gnu/release/url-scheme-handler \
+             AppDir/usr/bin/url-scheme-handler
           chmod +x AppDir/usr/bin/url-scheme-handler
 
-          mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
+          cp packaging/linux/url-scheme-handler.desktop \
+             AppDir/usr/share/applications/url-scheme-handler.desktop
 
-          cp packaging/linux/url-scheme-handler.png \
-            AppDir/usr/share/icons/hicolor/256x256/apps/url-scheme-handler.png
+          cp packaging/icon.png \
+             AppDir/usr/share/icons/hicolor/512x512/apps/url-scheme-handler.png
 
-          cat > AppDir/usr/share/applications/url-scheme-handler.desktop <<'EOF'
-          [Desktop Entry]
-          Type=Application
-          Name=URL Scheme Handler
-          Comment=Cross-platform URL scheme handler
-          Exec=url-scheme-handler %u
-          Terminal=false
-          Categories=Utility;
-          Icon=url-scheme-handler
-          MimeType=x-scheme-handler/ush;
-          EOF
-
-          cp \
-            AppDir/usr/share/applications/url-scheme-handler.desktop \
-            AppDir/url-scheme-handler.desktop
+          cp packaging/linux/url-scheme-handler.desktop AppDir/url-scheme-handler.desktop
 
       - name: Download linuxdeploy ARM64
         run: |
-          curl -L \
+          curl -L --fail --retry 3 \
             -o linuxdeploy-aarch64.AppImage \
             https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-aarch64.AppImage
-
           chmod +x linuxdeploy-aarch64.AppImage
 
-      - name: Build ARM64 AppImage
+      - name: Build AppImage
         env:
+          APPIMAGE_EXTRACT_AND_RUN: 1
           VERSION: ${{ needs.prepare.outputs.version }}
         run: |
-          ./linuxdeploy-aarch64.AppImage \
-            --appdir AppDir \
-            --output appimage
+          ./linuxdeploy-aarch64.AppImage --appdir AppDir --output appimage
 
-          APPIMAGE=$(find . \
-            -maxdepth 1 \
-            -type f \
-            -name '*.AppImage' \
-            ! -name 'linuxdeploy-*' \
-            | head -1)
-
+          APPIMAGE=$(find . -maxdepth 1 -type f -name '*.AppImage' \
+            ! -name 'linuxdeploy-*' | head -1)
           test -n "$APPIMAGE"
+          mv "$APPIMAGE" "url-scheme-handler-${VERSION}-linux-arm64.AppImage"
+          chmod +x "url-scheme-handler-${VERSION}-linux-arm64.AppImage"
 
-          mv "$APPIMAGE" \
-            "url-scheme-handler-${VERSION}-linux-arm64.AppImage"
-
-          chmod +x \
-            "url-scheme-handler-${VERSION}-linux-arm64.AppImage"
-
-      - name: Upload Linux ARM64 AppImage
+      - name: Upload Linux ARM64 artifact
         uses: actions/upload-artifact@v4
         with:
           name: linux-arm64
           path: |
             url-scheme-handler-${{ needs.prepare.outputs.version }}-linux-arm64.AppImage
+
   # ------------------------------------------------------------
   # macOS Intel: unsigned DMG
   # ------------------------------------------------------------
   build-macos-x86:
     name: Build macOS Intel DMG
     needs: prepare
-    # macos-13 is no longer available on GitHub-hosted runners.
-    # Use the current Intel macOS runner.
     runs-on: macos-15-intel
 
     steps:
@@ -436,18 +377,16 @@ jobs:
         run: |
           rm -rf dmg-root
           mkdir -p dmg-root
-
-          cp -R "URL Scheme Handler.app" dmg-root/
+          cp -R "scheme-handler.app" dmg-root/
           ln -s /Applications dmg-root/Applications
-
           hdiutil create \
-            -volname "URL Scheme Handler" \
+            -volname "scheme-handler" \
             -srcfolder dmg-root \
             -ov \
             -format UDZO \
             "url-scheme-handler-${VERSION}-macos-x86_64.dmg"
 
-      - name: Upload DMG
+      - name: Upload macOS Intel artifact
         uses: actions/upload-artifact@v4
         with:
           name: macos-x86_64
@@ -489,18 +428,16 @@ jobs:
         run: |
           rm -rf dmg-root
           mkdir -p dmg-root
-
-          cp -R "URL Scheme Handler.app" dmg-root/
+          cp -R "scheme-handler.app" dmg-root/
           ln -s /Applications dmg-root/Applications
-
           hdiutil create \
-            -volname "URL Scheme Handler" \
+            -volname "scheme-handler" \
             -srcfolder dmg-root \
             -ov \
             -format UDZO \
             "url-scheme-handler-${VERSION}-macos-arm64.dmg"
 
-      - name: Upload DMG
+      - name: Upload macOS ARM64 artifact
         uses: actions/upload-artifact@v4
         with:
           name: macos-arm64
@@ -519,7 +456,6 @@ jobs:
       - build-linux-arm64
       - build-macos-x86
       - build-macos-arm64
-
     runs-on: ubuntu-latest
 
     steps:
@@ -536,8 +472,7 @@ jobs:
           merge-multiple: true
 
       - name: List release assets
-        run: |
-          find release-assets -type f -maxdepth 2 -print
+        run: find release-assets -type f -maxdepth 2 -print
 
       - name: Generate release notes from tag range
         env:
@@ -549,9 +484,11 @@ jobs:
             echo "## Changes in $TAG"
             echo
             if [ -n "$PREVIOUS_TAG" ]; then
-              git log --no-merges --invert-grep --grep='^chore(release):' --pretty=format:'- %s (`%h`)' "$PREVIOUS_TAG..$TAG"
+              git log --no-merges --invert-grep --grep='^chore(release):' \
+                --pretty=format:'- %s (`%h`)' "$PREVIOUS_TAG..$TAG"
             else
-              git log --no-merges --invert-grep --grep='^chore(release):' --pretty=format:'- %s (`%h`)' "$TAG"
+              git log --no-merges --invert-grep --grep='^chore(release):' \
+                --pretty=format:'- %s (`%h`)' "$TAG"
             fi
             echo
           } > /tmp/release-notes.md

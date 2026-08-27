@@ -273,7 +273,7 @@ fn open_settings() {
     };
 
     let _ = eframe::run_native(
-        "URL Scheme Handler",
+        "scheme-handler",
         options,
         Box::new(|_cc| Ok(Box::new(UrlSchemeHandler::new()))),
     );
@@ -462,17 +462,17 @@ fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
         [_] => open_settings(),
         [_, command, input] if command == "run" => {
             if let Err(e) = execute_url(input) {
-                show_error("URL Scheme Handler", e);
+                show_error("scheme-handler", e);
             }
         }
         [_, input] if input.starts_with("ush://") => {
             if let Err(e) = execute_url(input) {
-                show_error("URL Scheme Handler", e);
+                show_error("scheme-handler", e);
             }
         }
         _ => {
             show_error(
-                "URL Scheme Handler",
+                "scheme-handler",
                 "Usage: url-scheme-handler run ush://<app_name>?<gzip_base64>",
             );
         }

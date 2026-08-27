@@ -3,15 +3,17 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleDisplayName</key>
-    <string>URL Scheme Handler</string>
+    <string>scheme-handler</string>
     <key>CFBundleExecutable</key>
     <string>url-scheme-handler</string>
     <key>CFBundleIdentifier</key>
     <string>com.luckypuppy.url-scheme-handler</string>
     <key>CFBundleName</key>
-    <string>URL Scheme Handler</string>
+    <string>scheme-handler</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
+    <key>CFBundleIconFile</key>
+    <string>icon.icns</string>
     <key>CFBundleVersion</key>
     <string>__VERSION__</string>
     <key>CFBundleShortVersionString</key>

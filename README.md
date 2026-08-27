@@ -1,4 +1,4 @@
-# URL Scheme Handler cross — Rust 构建跨平台版
+# scheme-handler — Rust 构建跨平台版
 
 基于 [LuckyPuppy514/url-scheme-handler](https://github.com/LuckyPuppy514/url-scheme-handler) 的实际行为功能，利用 AI 以 Rust 语言重写，构建跨平台，支持 Windows、Linux、macOS。
 
@@ -46,7 +46,7 @@ function compress(str) {
 const app_name = "MPV";
 const args = [
   '"https://example.com/example.mp4"',
-  '--force-media-title="URL Scheme Handler cross"',
+  '--force-media-title="scheme-handler"',
 ];
 
 window.open(`ush://${app_name}?${compress(args.join(" "))}`, "_self");
@@ -55,7 +55,7 @@ window.open(`ush://${app_name}?${compress(args.join(" "))}`, "_self");
 实际执行命令
 
 ```bat
-app_path "https://example.com/example.mp4" --force-media-title="URL Scheme Handler cross"
+app_path "https://example.com/example.mp4" --force-media-title="scheme-handler"
 ```
 
 ## 文档

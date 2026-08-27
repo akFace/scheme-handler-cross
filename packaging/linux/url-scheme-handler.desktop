@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
-Name=URL Scheme Handler
+Name=scheme-handler
 Comment=Cross-platform URL scheme handler
 Exec=url-scheme-handler %u
 Terminal=false

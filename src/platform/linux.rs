@@ -27,7 +27,7 @@ pub fn register_scheme(scheme: &str) -> Result<(), Box<dyn Error + Send + Sync>>
     let dir = applications_dir()?;
     fs::create_dir_all(&dir)?;
     let desktop = format!(
-        "[Desktop Entry]\nVersion=1.0\nType=Application\nName=URL Scheme Handler\nExec={} run %u\nNoDisplay=true\nTerminal=false\nMimeType=x-scheme-handler/{};\n",
+        "[Desktop Entry]\nVersion=1.0\nType=Application\nName=scheme-handler\nExec={} run %u\nNoDisplay=true\nTerminal=false\nMimeType=x-scheme-handler/{};\n",
         quote_exec_arg(&exe.to_string_lossy()),
         scheme
     );

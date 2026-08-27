@@ -6,7 +6,7 @@ pub fn register_scheme(scheme: &str) -> Result<(), Box<dyn Error + Send + Sync>>
     let command = format!("\"{}\" run \"%1\"", exe.display());
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     let (key, _) = hkcu.create_subkey(format!("Software\\Classes\\{scheme}"))?;
-    key.set_value("", &format!("URL: {} Protocol", scheme.to_uppercase()))?;
+    key.set_value("", &"scheme-handler")?;
     key.set_value("URL Protocol", &"")?;
     let (command_key, _) = key.create_subkey("shell\\open\\command")?;
     command_key.set_value("", &command)?;
