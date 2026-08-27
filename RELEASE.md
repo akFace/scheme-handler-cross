@@ -11,7 +11,7 @@ Windows 不使用 Setup 安装器。
 
 直接双击 `.exe` 即可运行。
 
-第一次运行后，在程序界面点击 **Add to Registry**，注册 `ush://` URL Scheme。
+Linux 会在程序启动时自动注册 `ush://` URL Scheme；AppImage 会使用实际 AppImage 文件路径注册，因此退出应用后仍可被浏览器唤起。
 
 也可以直接把 `.exe` 放到任意目录使用，不需要管理员权限。
 

@@ -289,20 +289,32 @@ struct UrlSchemeHandler {
 
 impl UrlSchemeHandler {
     fn new() -> Self {
+        let mut config = Config::load();
+
+        // Linux URL handlers are desktop-entry based. Register automatically
+        // when the GUI starts so the user does not need to click "Add to
+        // Registry" after every launch. For AppImage, platform::register_scheme
+        // uses $APPIMAGE so the registered path remains valid after exit.
+        #[cfg(target_os = "linux")]
+        {
+            if platform::register_scheme(SCHEME).is_ok() {
+                config.is_registry_added = true;
+                let _ = config.save();
+            }
+        }
+
         #[cfg(target_os = "macos")]
         {
             let received = platform::url_was_received();
             return Self {
-                config: Config::load(),
+                config,
                 started_at: Instant::now(),
                 ui_visibility_decided: received,
             };
         }
 
         #[cfg(not(target_os = "macos"))]
-        Self {
-            config: Config::load(),
-        }
+        Self { config }
     }
 
     fn persist(&self) {
@@ -456,6 +468,16 @@ fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
         start_macos_url_worker()?;
         open_settings();
         return Ok(());
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        // Also refresh registration for direct URL launches. This is important
+        // for AppImage: the application may have been moved since the last
+        // registration, and $APPIMAGE gives us the current real file path.
+        if let Err(e) = platform::register_scheme(SCHEME) {
+            eprintln!("scheme-handler: Linux URL registration failed: {e}");
+        }
     }
 
     match args.as_slice() {

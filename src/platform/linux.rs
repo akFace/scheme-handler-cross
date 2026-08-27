@@ -23,7 +23,14 @@ fn quote_exec_arg(path: &str) -> String {
 }
 
 pub fn register_scheme(scheme: &str) -> Result<(), Box<dyn Error + Send + Sync>> {
-    let exe = env::current_exe()?;
+    // AppImage runs the embedded ELF from a temporary mount. Registering
+    // current_exe() would therefore leave a dead path after the AppImage
+    // exits. Prefer the real AppImage file exposed by the AppImage runtime.
+    let exe = env::var_os("APPIMAGE")
+        .map(PathBuf::from)
+        .unwrap_or(env::current_exe()?);
+
+    let exe = exe.canonicalize().unwrap_or(exe);
     let dir = applications_dir()?;
     fs::create_dir_all(&dir)?;
     let desktop = format!(
@@ -35,9 +42,13 @@ pub fn register_scheme(scheme: &str) -> Result<(), Box<dyn Error + Send + Sync>>
 
     let _ = Command::new("update-desktop-database").arg(&dir).status();
     let mime = format!("x-scheme-handler/{scheme}");
-    let _ = Command::new("xdg-mime")
+    let status = Command::new("xdg-mime")
         .args(["default", "scheme-handler-ush.desktop", &mime])
-        .status();
+        .status()?;
+    if !status.success() {
+        return Err("xdg-mime failed to set ush:// as the default handler".into());
+    }
+
     Ok(())
 }
 
