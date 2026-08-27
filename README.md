@@ -6,7 +6,8 @@
 
 - 为应用添加自定义 URL Scheme 以便从浏览器调用
 - 支持 Windows、Linux、macOS。
-- 目前 Windows、macOS 已经测试功能正常、Linux 未测试（没设备）
+- 支持自定义参数
+- 使用方法可参考此项目：[play-with-mpv](https://github.com/akFace/play-with-mpv)
 
 ## 🧱 下载安装
 
@@ -19,7 +20,7 @@
 2. 在左边输入框填写应用名称，在右边选择需要调用的应用
 3. 点击 `+ Add to Registry` 添加注册表
 
-- 以 MPV 播放器为例：如图 ② 步骤中 -->Windows 系列选择播放器安装目录下的`mpv.exe`，macOS 系统选择 `/Applications/mpv.app`，Linux 未测试（没设备）
+- 以 MPV 播放器为例：如图 ② 步骤中 -->Windows 系列选择播放器安装目录下的`mpv.exe`，macOS 系统选择 `/Applications/mpv.app`，Linux 系统选择`/bin/mpv`
 
 ![20241125202543](https://github.com/akFace/scheme-handler-cross/blob/main/screenshot/Snipaste_2026-07-16_17-53-00.jpg?raw=true)
 
