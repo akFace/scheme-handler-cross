@@ -7,6 +7,7 @@
 - 为应用添加自定义 URL Scheme 以便从浏览器调用
 - 支持 Windows、Linux、macOS。
 - 支持自定义参数
+- 支持可选的本地 HTTP Bridge，把浏览器脚本通过获取到的 m3u8 文本内容提供给 mpv
 - 使用方法可参考此项目：[play-with-mpv](https://github.com/akFace/play-with-mpv)
 
 ## 🧱 下载安装
@@ -26,7 +27,7 @@
 
 > **注意：应用名称应与脚本中的唤起应用名称保持一致（大小写也需一致）**
 
-## ✍️ 用法
+## ✍️ 用法（以下所有内容为开发者文档）
 
 ```text
 ush://${app_name}?${gzip_args}
@@ -57,6 +58,92 @@ window.open(`ush://${app_name}?${compress(args.join(" "))}`, "_self");
 ```bat
 app_path "https://example.com/example.mp4" --force-media-title="scheme-handler"
 ```
+
+## m3u8 HTTP Bridge（可选）
+
+浏览器 JavaScript 无法把 Blob URL / Blob 中的 m3u8 内容直接作为文件交给 mpv 时，可以启用本地 HTTP Bridge。
+
+### 1. 先通过 URL Scheme 请求启动 Bridge
+
+```text
+ush://play?needServer=1
+```
+
+这是一个控制 URL，不携带 m3u8 内容。scheme-handler 收到后会启动独立的 HTTP Bridge 进程；Linux AppImage 会使用实际的 `.AppImage` 文件重新启动 Bridge，而不是依赖 AppImage 临时挂载目录。
+
+只要 URL 中存在：
+
+```text
+needServer=1
+```
+
+scheme-handler 就会启动独立的本地 HTTP Server。
+
+不带 `needServer=1` 的 URL 不会启动 Bridge，原有 `ush://` 行为完全不变。
+
+### 2. 油猴脚本等待 Bridge
+
+Bridge 默认监听：
+
+```text
+http://127.0.0.1:17891
+```
+
+状态接口：
+
+```http
+GET /api/status
+```
+
+### 3. 上传 m3u8
+
+不要把 m3u8 Base64 后塞进 `ush://`。直接 POST 原始文本：
+
+```javascript
+const response = await fetch("http://127.0.0.1:17891/api/m3u8", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/vnd.apple.mpegurl",
+  },
+  body: m3u8Text,
+});
+
+const { url } = await response.json();
+```
+
+返回：
+
+```json
+{
+  "url": "http://127.0.0.1:17891/m3u8/xxxxxxxx"
+}
+```
+
+把这个 URL 交给 mpv 即可播放。
+
+### Bridge 的职责
+
+Bridge **只负责保存和提供 m3u8 文本**：
+
+```text
+油猴 fetch Blob
+      ↓
+blob.text()
+      ↓
+POST /api/m3u8
+      ↓
+scheme-handler 内存缓存
+      ↓
+GET /m3u8/{id} 并返回http形式的m3u8给script
+      ↓
+script按照原有方式：ush://${app_name}?xxx
+```
+
+Bridge 不代理视频分片，不修改 m3u8，也不处理 Referer、Cookie、Authorization 等鉴权信息。m3u8 中的完整 HTTP 分片 URL 由 播放器 自己请求；原来由油猴脚本传给 播放器 的请求头继续由 播放器 使用。
+
+缓存只存在内存中，默认最后访问 30 分钟后自动清理，单个 m3u8 最大 16 MiB。
+
+Bridge 仅绑定 `127.0.0.1`，不会监听局域网地址。
 
 ## 文档
 

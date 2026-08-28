@@ -2730,6 +2730,7 @@ dependencies = [
  "dirs",
  "eframe",
  "flate2",
+ "rand 0.9.5",
  "rfd",
  "serde",
  "serde_json",

@@ -1,5 +1,6 @@
 #![cfg_attr(windows, windows_subsystem = "windows")]
 
+mod bridge;
 mod platform;
 
 use base64::{engine::general_purpose, Engine as _};
@@ -196,6 +197,15 @@ fn run_target(path: &str, command_line: &str) -> Result<(), AppError> {
         .map_err(|e| AppError::Command(format!("{path}: {e}")))
 }
 
+fn handle_bridge_url(input: &str) -> Result<bool, AppError> {
+    if !bridge::needs_server(input) {
+        return Ok(false);
+    }
+
+    bridge::ensure_server().map_err(|e| AppError::Command(e.to_string()))?;
+    Ok(true)
+}
+
 fn execute_url(input: &str) -> Result<(), AppError> {
     let (app_name, payload) = parse_url(input)?;
     let command_line = decompress_payload(&payload)?;
@@ -242,6 +252,15 @@ fn start_macos_url_worker() -> Result<(), Box<dyn Error + Send + Sync>> {
         .name("ush-url-worker".into())
         .spawn(move || {
             while let Ok(url) = receiver.recv() {
+                match handle_bridge_url(&url) {
+                    Ok(true) => continue,
+                    Ok(false) => {}
+                    Err(error) => {
+                        eprintln!("URL Scheme Handler: {error}");
+                        continue;
+                    }
+                }
+
                 if let Err(error) = execute_url(&url) {
                     // URL-triggered execution must not depend on the GUI being
                     // visible or focused. Log errors instead of opening a dialog.
@@ -289,7 +308,7 @@ struct UrlSchemeHandler {
 
 impl UrlSchemeHandler {
     fn new() -> Self {
-        let mut config = Config::load();
+        let config = Config::load();
 
         // Linux URL handlers are desktop-entry based. Register automatically
         // when the GUI starts so the user does not need to click "Add to
@@ -461,6 +480,10 @@ impl eframe::App for UrlSchemeHandler {
 fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     let args: Vec<String> = env::args().collect();
 
+    if args.get(1).map(String::as_str) == Some("--bridge-server") {
+        return bridge::run_server();
+    }
+
     #[cfg(target_os = "macos")]
     if args.len() == 1 {
         // Install the native Apple Event handler before starting eframe. The
@@ -483,13 +506,35 @@ fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     match args.as_slice() {
         [_] => open_settings(),
         [_, command, input] if command == "run" => {
-            if let Err(e) = execute_url(input) {
-                show_error("scheme-handler", e);
+            match handle_bridge_url(input) {
+                Ok(true) => {}
+                Ok(false) => {
+                    if let Err(e) = execute_url(input) {
+                        show_error("scheme-handler", e);
+                    }
+                }
+                Err(e) => {
+                    // Bridge startup is best-effort. Do not show a blocking
+                    // dialog for URL-triggered bridge launches; the userscript
+                    // will poll /api/status and report a real connection error
+                    // if the bridge never becomes available.
+                    eprintln!("scheme-handler: HTTP Bridge startup failed: {e}");
+                }
             }
         }
         [_, input] if input.starts_with("ush://") => {
-            if let Err(e) = execute_url(input) {
-                show_error("scheme-handler", e);
+            match handle_bridge_url(input) {
+                Ok(true) => {}
+                Ok(false) => {
+                    if let Err(e) = execute_url(input) {
+                        show_error("scheme-handler", e);
+                    }
+                }
+                Err(e) => {
+                    // Bridge startup is best-effort. Avoid a GUI error dialog
+                    // during a browser-triggered URL launch.
+                    eprintln!("scheme-handler: HTTP Bridge startup failed: {e}");
+                }
             }
         }
         _ => {
