@@ -308,7 +308,7 @@ struct UrlSchemeHandler {
 
 impl UrlSchemeHandler {
     fn new() -> Self {
-        let config = Config::load();
+        let mut config = Config::load();
 
         // Linux URL handlers are desktop-entry based. Register automatically
         // when the GUI starts so the user does not need to click "Add to
